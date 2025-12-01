@@ -1,33 +1,16 @@
+#include "builtins.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 
-// Builtin function declarations
-int lsh_cd(char **args);
-int lsh_echo(char **args);
-int lsh_pwd(char **args);
-int lsh_env(char **args);
-int lsh_help(char **args);
-int lsh_exit(char **args);
-
-// Builtin command table
+// Define the builtin tables
 char *builtin_str[] = {
-  "cd",
-  "echo",
-  "pwd",
-  "env",
-  "help",
-  "exit"
+  "cd", "echo", "pwd", "env", "help", "exit"
 };
 
 int (*builtin_func[]) (char **) = {
-  &lsh_cd,
-  &lsh_echo,
-  &lsh_pwd,
-  &lsh_env,
-  &lsh_help,
-  &lsh_exit
+  &lsh_cd, &lsh_echo, &lsh_pwd, &lsh_env, &lsh_help, &lsh_exit
 };
 
 int lsh_num_builtins() {

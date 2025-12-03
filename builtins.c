@@ -73,7 +73,7 @@ int cmd_help(char **args) {
   (void)args;
   
   puts("Available built-ins:");
-  for (size_t i = 0; i < num_builtins(); i++) {
+  for (size_t i = 0; i < builtin_count(); i++) {
     printf(" - %s\n", builtins[i].name);
   }
   return 1;

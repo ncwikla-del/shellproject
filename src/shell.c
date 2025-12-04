@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/types.h>
 #include "builtins.h"
 
 #define PROMPT "$ "
@@ -13,7 +14,7 @@
 // Read Input
 // Tokenization included; strtok
 
-int s_read(char *input, char **args) {
+int sh_read(char *input, char **args) {
    int i = 0;
    char *token = strtok(input, TOKEN_SEP);
    while (token != NULL && i < (MAX_ARGS - 1)) {
@@ -24,8 +25,8 @@ int s_read(char *input, char **args) {
    return i; 
 }
 
-//Execute Helper
-int s_execute(char *cmd, char **cmd_args) {
+//Execute 
+int sh_execute(char *cmd, char **cmd_args) {
    
    pid_t pid = fork();
    int status;
@@ -48,7 +49,8 @@ int s_execute(char *cmd, char **cmd_args) {
    }
  }
  return status;
-} 
+}
+
 
 int main(void) {  
   char *line = NULL;
@@ -70,12 +72,12 @@ int main(void) {
   // Remove the newline 
   line[strcspn(line, "\n")] = '\0';
 
-  int args_read = s_read(line, args);
+  int args_read = sh_read(line, args);
 
   if (args_read == 0) 
        continue;
 
-     s_execute(args[0], args);
+     sh_execute(args[0], args);
   }
   free(line);
   return 0; 

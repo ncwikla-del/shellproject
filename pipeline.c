@@ -1,5 +1,19 @@
 #include <stdio.h>
+#include <string.h>
 #include "pipe_utils.h"
+
+#define MAX_LINE 1024
+#define MAX_ARGS 100
+
+void parse_command(char *cmd, char **argv) {
+  int i = 0;
+  char *token = strtok(cmd, " \t\n");
+  while (token != NULL && i < MAX_ARGS - 1) {
+    argv[i++] = token;
+    token = strtok(NULL, " \t\n");
+  }
+  argv[i] = NULL;
+}
 
 int main() {
   char line[MAX_LINE];
@@ -28,5 +42,6 @@ int main() {
   parse_command(cmd2_str, cmd2);
 
   run_pipeline(cmd1, cmd2);
+  
   return 0;
 }  

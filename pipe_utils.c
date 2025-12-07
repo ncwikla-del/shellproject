@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/wait.h>
 
 void error_and_exit(const char *msg) {
@@ -9,64 +10,66 @@ void error_and_exit(const char *msg) {
   exit(1);
 }
 
-int run_pipeline(char *cmd1[], char *cmd[]) {
-  int pipefd[2];
+void parse_command(char *cmd, char **argv) {
+  int i = 0;
+  char *token = strtok(cmd, " \t\n");
+  while (token != NULL && i < MAX_ARGS - 1) {
+    argv[i++] = token;
+    token = strtok(NULL, " \t\n");
+  }
+  argv[i] = NULL;
+}
 
-  // Create a pipe: pipefd[0] = read end, pipefd[1] = write end
-  if (pipe(pipefd) == -1)
-    error_and_exit("pipe");
+int run_pipeline(char *cmds[][MAX_ARGS], int num_cmds) {
+  int i;
+  int pipefd[MAX_CMDS - 1][2];
 
-  pid_t pid1 = fork();
-  if (pid1 < 0)
-    error_and_exit("fork");
-
-  if (pid1 == 0) {
-    // CHILD 1
-    // This child will run cmd1 and send output into the pipe.
-
-    // Replace stdout with the write end of the pipe
-    dup2(pipefd[1], STDOUT_FILENO);
-
-    // Close both ends of the pipe in child
-    close(pipefd[0]);
-    close(pipefd[1]);
-
-    // Execute first command
-    execvp(cmd1[0], cmd1);
-    error_and_exit("execvp cmd1");
+  // Create pipes
+  for (i = 0; i < num_cmds - 1; i++) {
+    if (pipe(pipefd[i]) == -1)
+      error_and_exit("pipe");
   }
 
-  // Parent continues - fork child 2
-  pid_t pid2 = fork();
-  if (pid2 < 0)
-    error_and_exit("fork");
+  // Fork each command
+  for (i = 0; i < num_cmds; i++) {
+    pid_t pid = fork();
+    if (pid < 0)
+      error_and_exit("fork");
 
-  if (pid2 == 0) {
-    // CHILD 2
-    // This child will take input from the pipe and run cmd2
-    
-    // Replace stdin with the read end of the pipe
-    dup2(pipefd[0], STDIN_FILENO);
+    if (pid == 0) {
+      // CHILD PROCESS
 
-    // Close both ends of the pipe in child
-    close(pipefd[0]);
-    close(pipefd[1]);
+      // If not first command -> read from previous pipe
+      if (i > 0) {
+        dup2(pipefd[i - 1][0], STDIN_FILENO);
+      }
 
-    // Execute second command
-    execvp(cmd2[0], cmd2);
-    error_and_exit("execvp cmd2");
+      // If not last command -> write into next pipe
+      if (i < num_cmds - 1) {
+        dup2(pipefd[i][1], STDOUT_FILENO);
+      }
+
+      // Close all pipe fds in child
+      for (int j = 0; j < num_cmds - 1; j++) {
+        close(pipefd[j][0]);
+        close(pipefd[j][1]);
+      }
+
+      execvp(cmds[i][0], cmds[i]);
+      error_and_exit("execvp");
+    }
   }
 
-  // PARENT
+  // PARENT closes all pipes
+  for (i = 0; i < num_cmds - 1; i++) {
+    close(pipefd[i][0]);
+    close(pipefd[i][1]);
+  }
 
-  // Parent must close both ends of the pipe,
-  // otherwise children never detect EOF.
-  close(pipefd[0]);
-  close(pipefd[1]);
-
-  // Wait for both children
-  waitpid(pid1, NULL, 0);
-  waitpid(pid2, NULL, 0);
+  // Wait for all children
+  for (i = 0; i < num_cmds; i++) {
+    wait(NULL);
+  }
 
   return 0;
 }

@@ -11,7 +11,6 @@
 
 #define PROMPT "$ "
 #define MAX_LINE 2048
-#define MAX_ARGS MAX_ARGS
 
 // shell.c
 
